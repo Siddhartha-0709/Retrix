@@ -15,6 +15,7 @@ import {useNavigation} from '@react-navigation/native';
 import firebase from '@react-native-firebase/app';
 import '@react-native-firebase/database';
 import Snackbar from 'react-native-snackbar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
   const [login, setLogin] = useState(false);
@@ -42,7 +43,10 @@ const LoginScreen = () => {
     setUserId(uId);
     console.log(userId);
   };
-
+  async function saveLoginState(phoneNumber) {
+    AsyncStorage.setItem("loginState","Y");  
+    AsyncStorage.setItem("PhoneNumber",phoneNumber);  
+  }
   async function addPhoneNumberToFirebase(phoneNumber) {
     const database = firebase.database();
     const usersRef = database.ref('users-list');
@@ -53,8 +57,8 @@ const LoginScreen = () => {
         duration: Snackbar.LENGTH_SHORT,
       });
       navigation.navigate('SignUp');
-    }
-    else{
+    } else {
+      await saveLoginState(phoneNumber);
       navigation.navigate('ChatList', {phoneNumber});
     }
   }
@@ -68,13 +72,13 @@ const LoginScreen = () => {
       await addPhoneNumberToFirebase(phoneNumber);
     }
   };
-  const handleSignup = ()=>{
-    navigation.navigate('SignUp')
-  }
+  const handleSignup = () => {
+    navigation.navigate('SignUp');
+  };
   return (
     <SafeAreaView>
       <ImageBackground
-        source={require('../assets/images/background.png')}
+        source={require('../assets/images/background3.png')}
         style={styles.background}>
         <View style={styles.container}>
           <Text style={styles.heading}>Welcome Back!</Text>
@@ -93,9 +97,7 @@ const LoginScreen = () => {
                 onChangeText={text => setPhoneNumber(text)}
               />
             </View>
-            <TouchableOpacity style={styles.getOTP}
-            onPress={handleGetOTP}
-            >
+            <TouchableOpacity style={styles.getOTP} onPress={handleGetOTP}>
               <Text style={styles.getOTPText}>Get OTP</Text>
             </TouchableOpacity>
           </View>
@@ -113,17 +115,16 @@ const LoginScreen = () => {
                 onChangeText={text => setPin(text)}
               />
             </View>
-            <TouchableOpacity style={styles.getOTP}
-            onPress={authenticate}
-            >
+            <TouchableOpacity style={styles.getOTP} onPress={authenticate}>
               <Text style={styles.getOTPText}>Log In</Text>
             </TouchableOpacity>
           </View>
         </View>
-        <TouchableOpacity style={styles.button2}
-        onPress={handleSignup}
-        >
-          <Text style={styles.button2Text}>Don't Have an Account? <Text style={{color:'#45FFCA'}}>Sign Up</Text></Text>
+        <TouchableOpacity style={styles.button2} onPress={handleSignup}>
+          <Text style={styles.button2Text}>
+            Don't Have an Account?{' '}
+            <Text style={{color: '#45FFCA'}}>Sign Up</Text>
+          </Text>
         </TouchableOpacity>
       </ImageBackground>
     </SafeAreaView>
@@ -139,35 +140,38 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 5,
-    marginLeft:50
+    marginLeft: 20,
   },
   heading: {
-    marginVertical:240,
+    marginTop: 240,
     fontSize: 40,
-    color: '#000000',
+    color: '#FFFFFF',
     fontWeight: '900',
     marginBottom: 0,
   },
   subheading: {
     fontSize: 18,
-    color: '#000000',
+    color: '#FFFFFF',
     fontWeight: '900',
     marginBottom: 30,
+    marginLeft:8
   },
   inputFields: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    marginLeft: 'auto',
+    marginRight: 'auto',
   },
   inputContainer: {
-    width:230,
+    width: 230,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     elevation: 2,
-    marginRight: 10, // Added marginRight to separate TextInput and Get OTP button
-    paddingLeft:9
+    marginRight: 10,
+    paddingLeft: 9,
   },
   image: {
     height: 30,
@@ -179,27 +183,27 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     marginLeft: 8,
-    height:50
+    height: 50,
   },
   getOTP: {
-    backgroundColor: '#000000',
+    backgroundColor: '#FF6969',
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    marginTop:5,
-    width:100
+    marginTop: 5,
+    width: 100,
   },
   getOTPText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-    textAlign:'center'
+    textAlign: 'center',
   },
-  button2Text:{
-    color:'#FFFFFF',
-    fontWeight:'700',
-    fontSize:16,
-    marginLeft:20,
-    marginBottom:20
-  }
+  button2Text: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 16,
+    marginLeft: 20,
+    marginBottom: 20,
+  },
 });

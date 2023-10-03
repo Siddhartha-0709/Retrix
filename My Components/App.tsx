@@ -33,6 +33,7 @@ const initFirebase = () => {
 
 function App() {
   initFirebase();
+  
   return (
     <NavigationContainer>
       <Stack.Navigator>

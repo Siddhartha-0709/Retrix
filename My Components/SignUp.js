@@ -29,7 +29,7 @@ const SignUp = () => {
   return (
     <SafeAreaView>
       <ImageBackground
-        source={require('../assets/images/background1.png')}
+        source={require('../assets/images/background2.png')}
         style={styles.background}>
         <View>
           <Text style={styles.heading}>Let's Get Started!</Text>
@@ -83,8 +83,8 @@ const SignUp = () => {
         </TouchableOpacity>
         <TouchableOpacity style={styles.button2} onPress={handleLogin}>
           <Text style={styles.button2Text}>
-            Already Have an Account?{' '}
-            <Text style={{color: '#279EFF'}}>Log In</Text>
+            Already Have an Account?{'   '}
+            <Text style={{color: 'red'}}>Log In</Text>
           </Text>
         </TouchableOpacity>
       </ImageBackground>
@@ -100,15 +100,15 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 40,
-    color: '#000000',
+    color: '#FFFFFF',
     fontWeight: '900',
     marginBottom: 0,
-    marginVertical: 100,
+    marginTop:230,
     marginLeft: 50,
   },
   subheading: {
     fontSize: 18,
-    color: '#000000',
+    color: '#FFFFFF',
     fontWeight: '900',
     marginBottom: 30,
     marginLeft: 50,
@@ -136,12 +136,12 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   button: {
-    backgroundColor: '#000000',
+    backgroundColor: '#FF6969',
     width: 100,
     height: 40,
     borderRadius: 20,
     padding: 3,
-    marginTop: 50,
+    marginTop: 30,
     marginLeft: 'auto',
     marginRight: 'auto',
   },
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   button2Text: {
-    color: '#213555',
+    color: '#FFF5E0',
     fontWeight: '700',
     fontSize: 16,
     marginLeft: 20,
