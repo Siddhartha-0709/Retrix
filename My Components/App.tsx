@@ -10,6 +10,7 @@ import Chat from './Chat';
 import Welcome from './Welcome';
 import SignUp from './SignUp';
 import ProfilePicBio from './ProfilePicBio';
+import ViewImage from './ViewImage';
 
 //Firebase Credentials
 const firebaseConfig = {
@@ -66,6 +67,11 @@ function App() {
         <Stack.Screen
           name="Chat"
           component={Chat}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="ViewImage"
+          component={ViewImage}
           options={{headerShown: false}}
         />
       </Stack.Navigator>

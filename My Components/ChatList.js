@@ -13,11 +13,13 @@ import {
 import database from '@react-native-firebase/database';
 import Snackbar from 'react-native-snackbar';
 import {useNavigation} from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const ChatList = ({route}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [userData, setUserData] = useState('');
   const navigation = useNavigation();
-  const phoneNumber = route.params.phoneNumber; 
+  const phoneNumber = route.params.phoneNumber;
   const userChats = [];
   useEffect(() => {
     database()
@@ -60,6 +62,49 @@ const ChatList = ({route}) => {
         console.error('Error fetching chatroom data from Firebase:', error);
       });
   }, [phoneNumber]);
+
+  const handleChatRefresh = () => {
+    database()
+      .ref('/chatroom')
+      .once('value')
+      .then(snapshot => {
+        snapshot.forEach(childSnapshot => {
+          const uniqueKey = childSnapshot.key;
+          if (uniqueKey.includes(phoneNumber)) {
+            if (uniqueKey.substring(0, 9) === phoneNumber) {
+              var otherNumber = uniqueKey.substring(10, 19);
+              userChats.push(otherNumber);
+            } else {
+              var otherNumber = uniqueKey.substring(0, 10);
+              userChats.push(otherNumber);
+            }
+          }
+        });
+        console.log(userChats);
+        database()
+          .ref('/users-list')
+          .once('value')
+          .then(snapshot => {
+            const userData = snapshot.val();
+            console.log(Object.keys(userData));
+            const filteredUserData = {};
+            userChats.forEach(chatNumber => {
+              if (userData.hasOwnProperty(chatNumber)) {
+                filteredUserData[chatNumber] = userData[chatNumber];
+              }
+            });
+            console.log('Filtered User Data:', filteredUserData);
+            setUserData(filteredUserData);
+          })
+          .catch(error => {
+            console.error('Error fetching user data from Firebase:', error);
+          });
+      })
+      .catch(error => {
+        console.error('Error fetching chatroom data from Firebase:', error);
+      });
+  };
+
   const handleNewChat = (otherUser, otherUserName, imageLink) => {
     navigation.navigate('Chat', {
       phoneNumber,
@@ -67,7 +112,6 @@ const ChatList = ({route}) => {
       otherUserName,
       imageLink,
     });
-
   };
   const searchNewChat = () => {
     var arrayOfObjects;
@@ -122,6 +166,11 @@ const ChatList = ({route}) => {
             <Text style={styles.findButtonText}>Find</Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity style={styles.refreshButtonContainer}
+        onPress={handleChatRefresh}
+        >
+              <Text style={{color: '#000000',fontWeight:'800',textAlign:'center'}}>Refresh</Text>
+          </TouchableOpacity>
         <ScrollView style={styles.scrollContainer}>
           {Object.keys(userData).map(key => (
             <TouchableOpacity
@@ -135,14 +184,20 @@ const ChatList = ({route}) => {
                 )
               }>
               <Image
-                source={{
-                  uri: userData[key].imageLink,
-                }}
+                source={
+                  userData[key].imageLink !== 'null'
+                    ? {uri: userData[key].imageLink}
+                    : require('../assets/images/userdp.png')
+                }
                 style={styles.profilePic}
               />
               <View style={styles.chatInfo}>
                 <Text style={styles.chatName}>{userData[key].name}</Text>
-                <Text style={styles.lastMessage}>{userData[key].bio}</Text>
+                <Text style={styles.lastMessage}>
+                  {userData[key].bio !== 'null'
+                    ? userData[key].bio
+                    : 'Hey there I am on Retrix!'}
+                </Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -164,10 +219,11 @@ const styles = StyleSheet.create({
   // The rest of your styles...
   header: {
     height: 90,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
     justifyContent: 'center',
     marginHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between', // Aligns items at opposite ends
+    alignItems: 'center',
   },
   headerText: {
     fontSize: 32,
@@ -177,6 +233,15 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
+  },
+  refreshButtonContainer: {
+    backgroundColor:'#FFFFFF',
+    width:80,
+    height:30,
+    borderRadius:15,
+    padding:4,
+    marginLeft:300,
+    marginBottom:5
   },
   chatItem: {
     flexDirection: 'row',

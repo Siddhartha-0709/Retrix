@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
-  ActivityIndicator
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
 import React from 'react';
 import {useState} from 'react';
@@ -17,7 +19,6 @@ import firebase from '@react-native-firebase/app';
 import Snackbar from 'react-native-snackbar';
 import '@react-native-firebase/database';
 import {useNavigation} from '@react-navigation/native';
-
 const ProfilePicBio = ({route}) => {
   const [bio, setBio] = useState('null');
   const [imageLink, setImageLink] = useState('null');
@@ -26,7 +27,7 @@ const ProfilePicBio = ({route}) => {
   const phone = route.params.phone;
   const email = route.params.email;
   const navigation = useNavigation();
-
+  const [showActivity, setShowActivity] = useState(false);
   const handleLogin = () => {
     navigation.navigate('Login');
   };
@@ -43,7 +44,7 @@ const ProfilePicBio = ({route}) => {
         email,
         name,
         bio,
-        imageLink
+        imageLink,
       });
       setLoader(false);
     } else {
@@ -51,13 +52,13 @@ const ProfilePicBio = ({route}) => {
       //TODO:: Navigate to Login Screen
       Snackbar.show({
         text: 'Account already exists! Please Log In',
-        duration: Snackbar.LENGTH_SHORT,
+        duration: Snackbar.LENGTH_LONG,
       });
       navigation.navigate('Login');
-    }  
+    }
   }
   const register = () => {
-    addToFirebase(phone,email,name,bio,imageLink);
+    addToFirebase(phone, email, name, bio, imageLink);
     Snackbar.show({
       text: 'Account created Successfully!',
       duration: Snackbar.LENGTH_SHORT,
@@ -73,22 +74,29 @@ const ProfilePicBio = ({route}) => {
       const reference = storage().ref(dp.name);
       const pathToFile = dp.uri;
       //upload file
+      setShowActivity(true);
+      Snackbar.show({
+        text: 'Please wait for upload to complete!',
+        duration: Snackbar.LENGTH_SHORT,
+      });
       await reference.putFile(pathToFile);
       const url = await storage().ref(dp.name).getDownloadURL();
       console.log(url);
       setImageLink(url);
+      setShowActivity(false);
     } catch (err) {
       console.log(err);
     }
   };
   return (
-    <SafeAreaView>
-      <ImageBackground
-        source={require('../assets/images/background1.png')}
-        style={styles.background}>
+    <ImageBackground
+      source={require('../assets/images/background1.png')}
+      style={styles.background}>
+      <ScrollView keyboardShouldPersistTaps={'handled'}>
         <View style={{marginTop: 0}}>
           <Text style={styles.heading}>Let's Get Personal</Text>
           <Text style={styles.subheading}>Take a Snap & Share a Bio!</Text>
+          {showActivity ? <ActivityIndicator size="large" /> : null}
           {imageLink != 'null' ? (
             <Image
               source={{uri: imageLink}}
@@ -97,7 +105,7 @@ const ProfilePicBio = ({route}) => {
                 width: 200,
                 marginLeft: 'auto',
                 marginRight: 'auto',
-                borderRadius:50
+                borderRadius: 50,
               }}
             />
           ) : (
@@ -108,18 +116,19 @@ const ProfilePicBio = ({route}) => {
                 width: 200,
                 marginLeft: 'auto',
                 marginRight: 'auto',
-                borderRadius:50
+                borderRadius: 50,
               }}
             />
           )}
           <TouchableOpacity style={styles.button} onPress={uploadPic}>
-            {loader==false?(
-            <Image
-              source={require('../assets/images/camera.png')}
-              style={{height: 40, width: 40}}
-            />)
-            :
-            (<ActivityIndicator size="large" color="#00ff00" />)}
+            {loader == false ? (
+              <Image
+                source={require('../assets/images/camera.png')}
+                style={{height: 40, width: 40}}
+              />
+            ) : (
+              <ActivityIndicator size="large" color="#00ff00" />
+            )}
           </TouchableOpacity>
         </View>
         <View style={styles.inputFeilds}>
@@ -145,8 +154,8 @@ const ProfilePicBio = ({route}) => {
             <Text style={{color: '#279EFF'}}>Log In</Text>
           </Text>
         </TouchableOpacity>
-      </ImageBackground>
-    </SafeAreaView>
+      </ScrollView>
+    </ImageBackground>
   );
 };
 
@@ -155,6 +164,9 @@ export default ProfilePicBio;
 const styles = StyleSheet.create({
   background: {
     height: '100%',
+  },
+  container: {
+    flex: 1,
   },
   heading: {
     fontSize: 40,

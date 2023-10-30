@@ -17,6 +17,7 @@ import {firebase} from '@react-native-firebase/database';
 import DocumentPicker from 'react-native-document-picker';
 import Snackbar from 'react-native-snackbar';
 import storage from '@react-native-firebase/storage';
+import { useNavigation } from '@react-navigation/native';
 
 const Chat = ({route}) => {
   const user = route.params.phoneNumber;
@@ -27,6 +28,8 @@ const Chat = ({route}) => {
   const [data, setData] = useState('');
   const [fileData, setFileData] = useState('null');
   const scrollViewRef = useRef();
+  const navigation = useNavigation();
+
   let param1 = Number(user);
   let param2 = Number(otherUser);
   var chatRoomId;
@@ -35,10 +38,10 @@ const Chat = ({route}) => {
   } else {
     chatRoomId = param2.toString() + param1.toString();
   }
-  useEffect(() => {
+  useEffect(()=> {
     // This will run when fileData changes
-    console.log('File--' + fileData);
-    if(fileData!='null'){
+    console.log('File in UseEffect--' + fileData);
+    if (fileData != 'null') {
       updateMessages();
     }
   }, [fileData]);
@@ -61,45 +64,50 @@ const Chat = ({route}) => {
   }, [chatRoomId]);
 
   const updateMessages = async () => {
-    const chatroomRef = database().ref(`/chatroom/${chatRoomId}`);
-    const chatroomExists = await chatroomRef.once('value');
-    if (!chatroomExists) {
-      console.log('Creating New ChatRoom');
-      await chatroomRef
-        .update({
-          id: chatRoomId,
-          content: {
-            participant1: user,
-            participant2: otherUser,
-            messages: [
-              {
-                sender: user,
-                receiver: otherUser,
-                data: message,
-                media: fileData,
-                timestamp: firebase.database.ServerValue.TIMESTAMP, // This sets the timestamp to the server's current time
-              },
-            ],
-          },
-        })
-        .then(() => {
-          setMessage(''); // Clear the input field after sending a message
-        });
+    if ((message === '')&&(fileData==='null')) {
+      console.log('this')
     } else {
-      // Update the existing chatroom.
-      console.log('Updating Existing ChatRoom');
-      chatroomRef
-        .child('content/messages')
-        .push({
-          sender: user,
-          receiver: otherUser,
-          data: message,
-          media: fileData,
-          timestamp: firebase.database.ServerValue.TIMESTAMP, // This sets the timestamp to the server's current time
-        })
-        .then(() => {
-          setMessage(''); // Clear the input field after sending a message
-        });
+      const chatroomRef = database().ref(`/chatroom/${chatRoomId}`);
+      const chatroomExists = await chatroomRef.once('value');
+      if (!chatroomExists) {
+        console.log('Creating New ChatRoom');
+        await chatroomRef
+          .update({
+            id: chatRoomId,
+            content: {
+              participant1: user,
+              participant2: otherUser,
+              messages: [
+                {
+                  sender: user,
+                  receiver: otherUser,
+                  data: message,
+                  media: fileData,
+                  timestamp: firebase.database.ServerValue.TIMESTAMP, // This sets the timestamp to the server's current time
+                },
+              ],
+            },
+          })
+          .then(() => {
+            setMessage(''); // Clear the input field after sending a message
+          });
+      } else {
+        // Update the existing chatroom.
+        console.log('Updating Existing ChatRoom');
+        chatroomRef
+          .child('content/messages')
+          .push({
+            sender: user,
+            receiver: otherUser,
+            data: message,
+            media: fileData,
+            timestamp: firebase.database.ServerValue.TIMESTAMP, // This sets the timestamp to the server's current time
+          })
+          .then(() => {
+            setMessage(''); // Clear the input field after sending a message
+            setFileData('null')
+          });
+      }
     }
   };
 
@@ -114,8 +122,9 @@ const Chat = ({route}) => {
       //upload file
       Snackbar.show({
         text: 'Uploading media please wait',
-        duration: Snackbar.LENGTH_SHORT,
+        duration: Snackbar.LENGTH_INDEFINITE,
       });
+
       await reference.putFile(pathToFile);
       const url = await storage().ref(file.name).getDownloadURL();
       console.log(url);
@@ -129,14 +138,20 @@ const Chat = ({route}) => {
       console.log(err);
     }
   };
+  const handleViewImage =(img)=>{
+    navigation.navigate('ViewImage',{img});
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar />
+      <StatusBar backgroundColor={'#000000'} />
       <View style={styles.topBar}>
         <Image
-          source={{
-            uri: imageLink,
-          }}
+          source={
+            imageLink !== 'null'
+              ? {uri: imageLink}
+              : require('../assets/images/userdp.png')
+          }
           style={styles.profilePic}
         />
         <Text style={styles.topBarText}>{otherUserName}</Text>
@@ -158,27 +173,45 @@ const Chat = ({route}) => {
                   ? styles.senderMessage
                   : styles.receiverMessage;
               return (
-                <View key={key} style={senderStyle}>
+                <>
+                  <View key={key} style={senderStyle}>
                   {data[key].media !== 'null' ? (
-                    <Image
+                    <TouchableOpacity onPress={() => handleViewImage(data[key].media)}>
+                      <Image
                       source={{uri: data[key].media}}
-                      style={{width: 250, height: 250,margin:0,borderRadius:20}}
+                      style={{
+                        width: 250,
+                        height: 250,
+                        margin: 0,
+                        borderRadius: 20,
+                      }
+                    }
+                    onLoad={() => {
+                      // This function is called when the image has successfully loaded
+                      Snackbar.dismiss();
+                    }}
+                    onError={(error) => {
+                      // This function is called if there's an error loading the image
+                      console.error("Image loading error:", error);
+                    }}
                     />
+                    </TouchableOpacity>
                   ) : (
                     <Text style={styles.messageText}>{data[key].data}</Text>
                   )}
                 </View>
+                </>
               );
             })}
         </ScrollView>
 
         <View style={styles.inputContainer}>
-        <TouchableOpacity
+          <TouchableOpacity
             style={styles.sendImage}
             onPress={handleDocumentSend}>
             <Image
               source={require('../assets/images/gallery.png')}
-              style={{width:40,height:40}}
+              style={{width: 40, height: 40}}
             />
           </TouchableOpacity>
           <TextInput
@@ -190,9 +223,9 @@ const Chat = ({route}) => {
             value={message}
           />
           <TouchableOpacity style={styles.sendButton} onPress={updateMessages}>
-          <Image
+            <Image
               source={require('../assets/images/send.png')}
-              style={{width:40,height:40}}
+              style={{width: 40, height: 40}}
             />
           </TouchableOpacity>
         </View>
@@ -207,11 +240,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#27374D',
   },
   topBar: {
-    backgroundColor: '#000',
+    backgroundColor: '#000000',
     height: 60,
     flexDirection: 'row', // Horizontal layout
     alignItems: 'center', // Align items vertically
-    padding: 10, // Adjust padding as needed
+    paddingLeft: 10, // Adjust padding as needed
+    paddingRight: 10, // Adjust padding as needed
   },
   topBarText: {
     color: '#ffffff',
@@ -254,7 +288,7 @@ const styles = StyleSheet.create({
   messageText: {
     color: '#FFFFFF',
     fontSize: 18,
-    margin:8
+    margin: 8,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -275,26 +309,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     marginLeft: 4,
-    padding:6
+    padding: 6,
   },
   sendButtonText: {
     color: '#000000',
     fontWeight: 'bold',
-    marginLeft:'auto',
-    marginRight:'auto',
-    margin:5
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    margin: 5,
   },
   profilePic: {
-    width: 60,
-    height: 60,
+    width: 50,
+    height: 50,
     borderRadius: 30,
     marginRight: 15,
+    marginLeft: 10,
   },
-  sendImage:{
-    backgroundColor:'#FFFFFF',
-    borderRadius:20,
-    padding:5,
-    marginRight:4
-  }
+  sendImage: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 5,
+    marginRight: 4,
+  },
 });
 export default Chat;
